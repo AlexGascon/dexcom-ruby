@@ -10,24 +10,17 @@ RSpec.describe Dexcom::Authentication do
   let(:session_id) { 'random-session-id'}
 
   before do
-    base_headers = { 'User-Agent' => user_agent }
-    json_content_type = { 'Content-Type' => 'application/json' }
+    headers = { 'User-Agent' => user_agent , 'Content-Type' => 'application/json' }
     payload = { accountName: account_name, password: password, applicationId: application_id }
     query = { 'sessionId': session_id, minutes: 1440, maxCount: num_values }
 
     @auth_request =
       stub_request(:post, "#{base_url}/General/AuthenticatePublisherAccount")
-      .with(headers: base_headers.merge(json_content_type), body: payload)
+      .with(headers: headers, body: payload)
 
     @login_request =
       stub_request(:post, "#{base_url}/General/LoginPublisherAccountByName")
-      .with(headers: base_headers.merge(json_content_type), body: payload)
-
-=begin
-    @glucose_values_request =
-      stub_request(:post, "#{base_url}/Publisher/ReadPublisherLatestGlucoseValues")
-      .with(headers: base_headers, query: query)
-=end
+      .with(headers: headers, body: payload)
     end
 
   describe '.access_token' do
@@ -54,6 +47,7 @@ RSpec.describe Dexcom::Authentication do
 
   describe '.session_id' do
     before do
+      @auth_request.to_return(status: 200, body: '"random-auth-id"')
       @login_request.to_return(status: 200, body: '"random-session-id"')
     end
 
@@ -61,7 +55,7 @@ RSpec.describe Dexcom::Authentication do
       expect(Dexcom::Authentication.session_id).to eq 'random-session-id'
     end
 
-    context 'when the access token is not set' do
+    context 'when the session_id is not set' do
       before do
         Dexcom::Authentication.instance_variable_set('@session_id', nil)
       end
@@ -70,6 +64,18 @@ RSpec.describe Dexcom::Authentication do
         Dexcom::Authentication.session_id
 
         expect(@login_request).to have_been_made.times(1)
+      end
+    end
+
+    context 'when the access_token is not set' do
+      before do
+        Dexcom::Authentication.instance_variable_set('@access_token', nil)
+      end
+
+      it 'makes an auth request' do
+        Dexcom::Authentication.access_token
+
+        expect(@auth_request).to have_been_made.times(1)
       end
     end
   end
