@@ -3,3 +3,6 @@
 
 # Bundler config
 .bundle/*
+
+# RSpec last test run data
+.rspec_status
