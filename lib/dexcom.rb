@@ -2,7 +2,7 @@
 
 require 'dexcom/authentication'
 require 'dexcom/configuration'
-require 'dexcom/utils'
+require 'dexcom/constants'
 require 'dexcom/version'
 
 module Dexcom
