@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'dexcom/authentication'
 require 'dexcom/configuration'
 require 'dexcom/utils'
 require 'dexcom/version'
