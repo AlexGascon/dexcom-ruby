@@ -52,7 +52,7 @@ module Dexcom
         timestamp = timestamp_info[timestamp_regex, 1]
         utc = '+00:00'
 
-        DateTime.parse(Time.at(timestamp.to_i, in: utc).to_s)
+        DateTime.strptime(timestamp, '%s')
       end
 
       def config
