@@ -42,7 +42,8 @@ module Dexcom
       def query(max_count)
         {
           maxCount: max_count,
-          minutes: MAX_MINUTES
+          minutes: MAX_MINUTES,
+          sessionId: Dexcom::Authentication.session_id
         }
       end
 
@@ -50,7 +51,6 @@ module Dexcom
         timestamp_info = blood_glucose_response_item['WT']
         timestamp_regex = /(\d+)000/
         timestamp = timestamp_info[timestamp_regex, 1]
-        utc = '+00:00'
 
         DateTime.strptime(timestamp, '%s')
       end

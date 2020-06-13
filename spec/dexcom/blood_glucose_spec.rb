@@ -14,11 +14,13 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
   let(:response_body) { (blood_glucose_response_item * number_of_values).to_json }
 
   before do
+    allow(Dexcom::Authentication).to receive(:session_id).and_return '1234-56-7890'
+
     @blood_glucose_request =
       stub_request(:post, "#{base_url}/Publisher/ReadPublisherLatestGlucoseValues")
       .with(
         headers: { 'User-Agent' => 'Dexcom Share/3.0.2.11 CFNetwork/711.2.23 Darwin/14.0.0' },
-        query: { minutes: 1440, maxCount: number_of_values }
+        query: { minutes: 1440, maxCount: number_of_values, sessionId: '1234-56-7890' }
       )
       .to_return(status: 200, body: response_body)
   end
