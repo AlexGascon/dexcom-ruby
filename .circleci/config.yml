@@ -1,0 +1,51 @@
+version: 2.1
+orbs:
+    ruby: circleci/ruby@0.1.2
+
+common: &common
+    steps:
+        - checkout
+        - run:
+            name: Configure Bundler
+            command: |
+                echo 'export BUNDLER_VERSION=$(cat Gemfile.lock | tail -1 | tr -d " ")' >> $BASH_ENV
+                source $BASH_ENV
+                gem install bundler
+        - restore_cache:
+            keys:
+                - v1-dep-bundle-{{ checksum "Gemfile.lock" }}
+                - v1-dep-bundle-
+        - run:
+            name: Install dependencies
+            command: |
+                bundle install --jobs=4 --retry=3 --path vendor/bundle
+        - save_cache:
+            key: v1-dep-bundle-{{ checksum "Gemfile.lock" }}
+            paths:
+                - vendor/bundle
+        - run:
+            name: Run tests
+            command: |
+                bundle exec rspec --color --format documentation --format progress spec
+                
+
+jobs:
+    "ruby-25":
+        <<: *common
+        docker:
+            - image: circleci/ruby:2.5
+    "ruby-26":
+        <<: *common
+        docker:
+            - image: circleci/ruby:2.6
+    "ruby-27":
+        <<: *common
+        docker:
+            - image: ruby:2.7
+workflows:
+    version: 2.1
+    build:
+        jobs:
+            - "ruby-25"
+            - "ruby-26"
+            - "ruby-27"
