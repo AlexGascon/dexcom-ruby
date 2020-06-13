@@ -65,5 +65,5 @@ RSpec.describe Dexcom::BloodGlucose do
     subject { Dexcom::BloodGlucose.last }
 
     it_behaves_like 'retrieves blood glucose values', 1
-  end
+  end 
 end
