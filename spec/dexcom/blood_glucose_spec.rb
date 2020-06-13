@@ -4,14 +4,14 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
   let(:base_url) { 'https://shareous1.dexcom.com/ShareWebServices/Services' }
   let(:blood_glucose_response_item) do
     [{
-      'DT': '/Date(1591500198000+0000)/',
-      'ST': '/Date(1591492998000)/',
+      'DT': '/Date(1591832594000+0000)/',
+      'ST': '/Date(1591825394000)/',
       'Trend': 4,
       'Value': 96,
-      'WT': '/Date(1591492998000)/'
+      'WT': '/Date(1591825394000)/'
     }]
   end
-  let(:expected_response_body) { (blood_glucose_response_item * number_of_values).to_json }
+  let(:response_body) { (blood_glucose_response_item * number_of_values).to_json }
 
   before do
     @blood_glucose_request =
@@ -20,7 +20,7 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
         headers: { 'User-Agent' => 'Dexcom Share/3.0.2.11 CFNetwork/711.2.23 Darwin/14.0.0' },
         query: { minutes: 1440, maxCount: number_of_values }
       )
-      .to_return(status: 200, body: expected_response_body)
+      .to_return(status: 200, body: response_body)
   end
 
   it 'makes a request to the API' do
@@ -28,9 +28,34 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
 
     expect(@blood_glucose_request).to have_been_made.times(1)
   end
+
+  it 'returns the correct number of BloodGlucose items' do
+    result = subject
+
+    expect(result.size).to eq number_of_values
+  end
+
+  it 'correctly parses the BloodGlucose data' do
+    result = subject
+    bg = result.first
+
+    expect(bg.value).to eq 96
+    expect(bg.trend).to eq 4
+    expect(bg.timestamp).to eq DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00')
+  end
 end
 
 RSpec.describe Dexcom::BloodGlucose do
+  describe 'fields and properties' do
+    subject(:bg) { build(:blood_glucose) }
+
+    it('#mg_dl') { expect(bg.mg_dl).to eq 142 }
+    it('#mmol') { expect(bg.mmol).to eq 7.9 }
+    it('#timestamp') { expect(bg.timestamp).to eq DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00') }
+    it('#trend_symbol') { expect(bg.trend_symbol).to eq '↗' }
+    it('#trend_description') { expect(bg.trend_description).to eq 'Rising slightly' }
+  end
+
   describe '.get_last' do
     context 'when is called without arguments' do
       subject { Dexcom::BloodGlucose.get_last }
@@ -65,5 +90,5 @@ RSpec.describe Dexcom::BloodGlucose do
     subject { Dexcom::BloodGlucose.last }
 
     it_behaves_like 'retrieves blood glucose values', 1
-  end 
+  end
 end
