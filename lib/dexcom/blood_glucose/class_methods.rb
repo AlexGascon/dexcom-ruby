@@ -7,7 +7,7 @@ module Dexcom
       MINUTES_PER_DATAPOINT = 5
 
       def last
-        get_last(max_count: 1)
+        get_last(max_count: 1).first
       end
 
       def get_last(max_count: nil, minutes: nil)
