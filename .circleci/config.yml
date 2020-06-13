@@ -13,7 +13,7 @@ common: &common
                 gem install bundler
         - restore_cache:
             keys:
-                - v1-dep-bundle-{{ checksum "Gemfile.lock" }}-${CIRCLE_JOB}
+                - v1-dep-bundle-{{ checksum "Gemfile.lock" }}-{{ .Environment.CIRCLE_JOB }}
                 - v1-dep-bundle-{{ checksum "Gemfile.lock" }}
                 - v1-dep-bundle-
         - run:
@@ -21,7 +21,7 @@ common: &common
             command: |
                 bundle install --jobs=4 --retry=3 --path vendor/bundle
         - save_cache:
-            key: v1-dep-bundle-{{ checksum "Gemfile.lock" }}-${CIRCLE_JOB}
+            key: v1-dep-bundle-{{ checksum "Gemfile.lock" }}-{{ .Environment.CIRCLE_JOB }}
             paths:
                 - vendor/bundle
         - run:
