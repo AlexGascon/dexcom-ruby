@@ -14,7 +14,13 @@ module Dexcom
         number_of_values = calculate_number_of_values(max_count, minutes)
 
         response = make_api_request(number_of_values)
-        process_api_response(response)
+        blood_glucose_values = process_api_response(response)
+
+        unless minutes.nil?
+          remove_older_than_minutes!(blood_glucose_values, minutes)
+        end
+
+        blood_glucose_values
       end
 
       private
@@ -27,6 +33,13 @@ module Dexcom
         else
           [max_count, minutes / MINUTES_PER_DATAPOINT].min
         end
+      end
+
+      def remove_older_than_minutes!(blood_glucose_values, minutes)
+        latest_timestamp_allowed = DateTime.now - Helpers.minutes_to_datetime_delta(minutes)
+
+        blood_glucose_values
+        .select! { |bg| bg.timestamp >= latest_timestamp_allowed }
       end
     end
   end
