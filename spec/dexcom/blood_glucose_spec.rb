@@ -24,7 +24,6 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
 end
 
 RSpec.describe Dexcom::BloodGlucose do
-
   describe 'fields and properties' do
     subject(:bg) { build(:blood_glucose) }
 
@@ -58,6 +57,14 @@ RSpec.describe Dexcom::BloodGlucose do
           query: { minutes: 1440, maxCount: number_of_values, sessionId: '1234-56-7890' }
         )
         .to_return(status: 200, body: response_body)
+    end
+
+    around do |example|
+      Timecop.freeze DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00')
+
+      example.run
+
+      Timecop.return
     end
 
     describe '.get_last' do
