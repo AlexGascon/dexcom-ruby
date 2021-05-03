@@ -25,21 +25,21 @@ end
 
 RSpec.describe Dexcom::BloodGlucose do
   MINUTES_BETWEEN_BGS = 5
+  LAST_TIMESTAMP_WITH_DATA = DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00')
 
   describe 'fields and properties' do
     subject(:bg) { build(:blood_glucose) }
 
     it('#mg_dl') { expect(bg.mg_dl).to eq 142 }
     it('#mmol') { expect(bg.mmol).to eq 7.9 }
-    it('#timestamp') { expect(bg.timestamp).to eq DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00') }
+    it('#timestamp') { expect(bg.timestamp).to eq LAST_TIMESTAMP_WITH_DATA }
     it('#trend_symbol') { expect(bg.trend_symbol).to eq '↗' }
     it('#trend_description') { expect(bg.trend_description).to eq 'Rising slightly' }
   end
 
   describe 'API methods' do
-    let(:current_time) { DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00') }
     let(:base_url) { 'https://shareous1.dexcom.com/ShareWebServices/Services' }
-    let(:response_body) { Helpers.mock_api_bgs(current_time, number_of_values).to_json }
+    let(:response_body) { Helpers.mock_api_bgs(LAST_TIMESTAMP_WITH_DATA, number_of_values).to_json }
 
     before do
       allow(Dexcom::Authentication).to receive(:session_id).and_return '1234-56-7890'
@@ -54,7 +54,7 @@ RSpec.describe Dexcom::BloodGlucose do
     end
 
     around do |example|
-      Timecop.freeze DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00')
+      Timecop.freeze LAST_TIMESTAMP_WITH_DATA
 
       example.run
 
@@ -88,7 +88,12 @@ RSpec.describe Dexcom::BloodGlucose do
         let(:number_of_values) { 4 }
         subject { Dexcom::BloodGlucose.get_last(minutes: 20, max_count: 6) }
 
-        it_behaves_like 'retrieves blood glucose values', [20 / MINUTES_BETWEEN_BGS, 6].min
+        it 'returns the minimum number of BloodGlucose items' do
+          result = subject
+
+          expected_count = [20 / MINUTES_BETWEEN_BGS, 6].min
+          expect(result.size).to eq expected_count
+        end
       end
     end
 
