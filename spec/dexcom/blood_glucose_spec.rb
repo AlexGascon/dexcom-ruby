@@ -15,7 +15,7 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
 
   it 'correctly parses the BloodGlucose data' do
     result = subject
-    bg = result.first
+    bg = result.last
 
     expect(bg.value).to eq 96
     expect(bg.trend).to eq 4
@@ -35,17 +35,9 @@ RSpec.describe Dexcom::BloodGlucose do
   end
 
   describe 'API methods' do
+    let(:current_time) { DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00') }
     let(:base_url) { 'https://shareous1.dexcom.com/ShareWebServices/Services' }
-    let(:blood_glucose_response_item) do
-      [{
-        'DT': '/Date(1591832594000+0000)/',
-        'ST': '/Date(1591825394000)/',
-        'Trend': 4,
-        'Value': 96,
-        'WT': '/Date(1591825394000)/'
-      }]
-    end
-    let(:response_body) { (blood_glucose_response_item * number_of_values).to_json }
+    let(:response_body) { Helpers.mock_api_bgs(current_time, number_of_values).to_json }
 
     before do
       allow(Dexcom::Authentication).to receive(:session_id).and_return '1234-56-7890'
