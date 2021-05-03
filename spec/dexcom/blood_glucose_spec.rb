@@ -24,6 +24,8 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
 end
 
 RSpec.describe Dexcom::BloodGlucose do
+  MINUTES_BETWEEN_BGS = 5
+
   describe 'fields and properties' do
     subject(:bg) { build(:blood_glucose) }
 
@@ -77,19 +79,16 @@ RSpec.describe Dexcom::BloodGlucose do
 
       context 'when is called with minutes' do
         let(:number_of_values) { 3 }
-        minutes = 15
-        subject { Dexcom::BloodGlucose.get_last(minutes: minutes) }
+        subject { Dexcom::BloodGlucose.get_last(minutes: 15) }
 
-        it_behaves_like 'retrieves blood glucose values', (minutes / 5)
+        it_behaves_like 'retrieves blood glucose values', (15 / MINUTES_BETWEEN_BGS)
       end
 
       context 'when is called with a max_count and minutes' do
         let(:number_of_values) { 4 }
-        minutes = 20
-        max_count = 6
-        subject { Dexcom::BloodGlucose.get_last(minutes: minutes, max_count: max_count) }
+        subject { Dexcom::BloodGlucose.get_last(minutes: 20, max_count: 6) }
 
-        it_behaves_like 'retrieves blood glucose values', [minutes / 5, max_count].min
+        it_behaves_like 'retrieves blood glucose values', [20 / MINUTES_BETWEEN_BGS, 6].min
       end
     end
 
