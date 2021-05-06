@@ -15,7 +15,7 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
 
   it 'correctly parses the BloodGlucose data' do
     result = subject
-    bg = result.first
+    bg = result.last
 
     expect(bg.value).to eq 96
     expect(bg.trend).to eq 4
@@ -24,29 +24,22 @@ RSpec.shared_examples 'retrieves blood glucose values' do |number_of_values|
 end
 
 RSpec.describe Dexcom::BloodGlucose do
+  MINUTES_BETWEEN_BGS = 5
+  LAST_TIMESTAMP_WITH_DATA = DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00')
 
   describe 'fields and properties' do
     subject(:bg) { build(:blood_glucose) }
 
     it('#mg_dl') { expect(bg.mg_dl).to eq 142 }
     it('#mmol') { expect(bg.mmol).to eq 7.9 }
-    it('#timestamp') { expect(bg.timestamp).to eq DateTime.new(2020, 6, 10, 21, 43, 14, '+00:00') }
+    it('#timestamp') { expect(bg.timestamp).to eq LAST_TIMESTAMP_WITH_DATA }
     it('#trend_symbol') { expect(bg.trend_symbol).to eq '↗' }
     it('#trend_description') { expect(bg.trend_description).to eq 'Rising slightly' }
   end
 
   describe 'API methods' do
     let(:base_url) { 'https://shareous1.dexcom.com/ShareWebServices/Services' }
-    let(:blood_glucose_response_item) do
-      [{
-        'DT': '/Date(1591832594000+0000)/',
-        'ST': '/Date(1591825394000)/',
-        'Trend': 4,
-        'Value': 96,
-        'WT': '/Date(1591825394000)/'
-      }]
-    end
-    let(:response_body) { (blood_glucose_response_item * number_of_values).to_json }
+    let(:response_body) { Helpers.mock_api_bgs(LAST_TIMESTAMP_WITH_DATA, number_of_values).to_json }
 
     before do
       allow(Dexcom::Authentication).to receive(:session_id).and_return '1234-56-7890'
@@ -58,6 +51,14 @@ RSpec.describe Dexcom::BloodGlucose do
           query: { minutes: 1440, maxCount: number_of_values, sessionId: '1234-56-7890' }
         )
         .to_return(status: 200, body: response_body)
+    end
+
+    around do |example|
+      Timecop.freeze LAST_TIMESTAMP_WITH_DATA
+
+      example.run
+
+      Timecop.return
     end
 
     describe '.get_last' do
@@ -78,19 +79,74 @@ RSpec.describe Dexcom::BloodGlucose do
 
       context 'when is called with minutes' do
         let(:number_of_values) { 3 }
-        minutes = 15
-        subject { Dexcom::BloodGlucose.get_last(minutes: minutes) }
+        subject { Dexcom::BloodGlucose.get_last(minutes: 15) }
 
-        it_behaves_like 'retrieves blood glucose values', (minutes / 5)
+        it_behaves_like 'retrieves blood glucose values', (15 / MINUTES_BETWEEN_BGS)
+
+        context 'when there is no data for part of the specified period' do
+          it 'filters to return only the corresponding minutes' do
+            delay_in_minutes = 8
+            Timecop.freeze(LAST_TIMESTAMP_WITH_DATA + Helpers.minutes_to_datetime_delta(delay_in_minutes))
+
+            result = subject
+
+            minutes_with_data = 15 - delay_in_minutes
+            expected_count = (minutes_with_data * 1.0 / MINUTES_BETWEEN_BGS).ceil
+            expect(result.size).to eq expected_count
+
+            Timecop.return
+          end
+        end
+
+        context 'when the last allowed time exactly matches a reading timestamp' do
+          it 'includes that reading' do
+            delay_in_minutes = 15
+            Timecop.freeze(LAST_TIMESTAMP_WITH_DATA + Helpers.minutes_to_datetime_delta(delay_in_minutes))
+
+            result = subject
+            expect(result.size).to eq 1
+
+            Timecop.return
+          end
+        end
+
+        context 'when there is no data for the specified period' do
+          it 'returns an empty array if no datapoint was published in the specified period' do
+            delay_in_years = 20
+            delay_in_minutes = delay_in_years * 365 * 24 * 60
+            Timecop.freeze LAST_TIMESTAMP_WITH_DATA + Helpers.minutes_to_datetime_delta(delay_in_minutes)
+
+            result = subject
+            expect(result).to eq []
+
+            Timecop.return
+          end
+        end
       end
 
       context 'when is called with a max_count and minutes' do
         let(:number_of_values) { 4 }
-        minutes = 20
-        max_count = 6
-        subject { Dexcom::BloodGlucose.get_last(minutes: minutes, max_count: max_count) }
 
-        it_behaves_like 'retrieves blood glucose values', [minutes / 5, max_count].min
+        it 'returns the minimum number of BloodGlucose items' do
+          result = Dexcom::BloodGlucose.get_last(minutes: 20, max_count: 6)
+
+          expected_count = [20 / MINUTES_BETWEEN_BGS, 6].min
+          expect(result.size).to eq expected_count
+        end
+
+        context 'when the minimum is driven by count but datapoints are outdated' do
+          let(:number_of_values) { 3 }
+
+          it 'returns only the datapoints in the specified period' do
+            delay_in_minutes = 21
+            Timecop.freeze LAST_TIMESTAMP_WITH_DATA + Helpers.minutes_to_datetime_delta(delay_in_minutes)
+
+            result = Dexcom::BloodGlucose.get_last(minutes: 20, max_count: 3)
+            expect(result).to eq []
+
+            Timecop.return
+          end
+        end
       end
     end
 
