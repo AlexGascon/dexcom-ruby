@@ -1,7 +1,8 @@
 PATH
   remote: .
   specs:
-    dexcom (0.2.2)
+    dexcom (0.3.0)
+      activesupport
       httparty
 
 GEM
