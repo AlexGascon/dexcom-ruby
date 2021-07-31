@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
-require 'httparty'
+require 'utils/httparty_configured'
 
 module Dexcom
   class Authentication
+    include ::Utils::HTTPartyConfigured
+
     class << self
       def access_token
         refresh_access_token if @access_token.nil?

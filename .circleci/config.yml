@@ -29,10 +29,6 @@ common: &common
 
 
 jobs:
-    "ruby-25":
-        <<: *common
-        docker:
-            - image: circleci/ruby:2.5
     "ruby-26":
         <<: *common
         docker:
@@ -41,10 +37,14 @@ jobs:
         <<: *common
         docker:
             - image: ruby:2.7
+    "ruby-30":
+        <<: *common
+        docker:
+            - image: ruby:3.0
 workflows:
     version: 2.1
     build:
         jobs:
-            - "ruby-25"
             - "ruby-26"
             - "ruby-27"
+            - "ruby-30"
