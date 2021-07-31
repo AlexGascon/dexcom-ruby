@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require 'utils/httparty_configured'
+
 module Dexcom
   module BloodGlucoseUtils
     module ApiHandler
+      include ::Utils::HTTPartyConfigured
+
       MAX_MINUTES = 1440
 
       def make_api_request(number_of_values)
